@@ -1,0 +1,61 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# vite build output
+/dist
+/dist-ssr
+*.local
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# local env files
+.env*.local
+.env
+
+# editor
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# typescript
+*.tsbuildinfo
+
+# Runtime files
+consolidation-result.json
+batch-data.json
+*.log
+
+# OS files
+Thumbs.db
+nul
+
+# Temporary files
+*.swp
+*.swo
+*~
+
+# Claude AI assistant files
+.claude/
+*.claude
