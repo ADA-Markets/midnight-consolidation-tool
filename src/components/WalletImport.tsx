@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { walletService } from '@/services/walletService';
 
 interface WalletImportProps {
@@ -136,9 +137,51 @@ export function WalletImport({ onImportSuccess }: WalletImportProps) {
 
       {/* Address Count */}
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-300">
-          Number of Addresses to Derive: {addressCount}
-        </label>
+        <div className="flex items-center gap-2">
+          <label className="block text-sm font-medium text-gray-300">
+            Number of Addresses to Derive: {addressCount}
+          </label>
+          <Dialog>
+            <DialogTrigger asChild>
+              <button
+                type="button"
+                className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-purple-500/20 hover:bg-purple-500/30 transition-colors"
+                aria-label="Information about address derivation"
+              >
+                <svg className="w-3 h-3 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Address Derivation Guide</DialogTitle>
+                <DialogDescription>
+                  Understanding how many addresses to derive
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 text-sm text-gray-300">
+                <p>
+                  Select the number of addresses based on how many you believe you used during mining.
+                </p>
+                <div className="space-y-2">
+                  <p className="font-semibold text-white">How to choose:</p>
+                  <ul className="list-disc pl-5 space-y-1 text-gray-400">
+                    <li>If you used a single address: select <strong className="text-white">1-5</strong></li>
+                    <li>For multiple mining sessions: select <strong className="text-white">10-20</strong></li>
+                    <li>Heavy mining activity: select <strong className="text-white">20-50</strong></li>
+                    <li>Uncertain or extensive use: select <strong className="text-white">50-100</strong></li>
+                  </ul>
+                </div>
+                <div className="bg-yellow-500/10 border border-yellow-500/50 rounded p-3">
+                  <p className="text-xs text-yellow-400">
+                    <strong>Note:</strong> Higher numbers will take longer to scan but ensure all your addresses are found.
+                  </p>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
         <input
           type="range"
           min="1"
