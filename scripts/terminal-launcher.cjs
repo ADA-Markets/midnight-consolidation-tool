@@ -179,7 +179,20 @@ const server = http.createServer((req, res) => {
           ['signature', signature],
         ]);
 
-        launchTerminal(command, DEFAULT_WINDOW_TITLE);
+        // Launch Windows terminal with the consolidation script
+        const terminal = spawn('cmd.exe', [
+          '/c',
+          'start',
+          'cmd.exe',
+          '/k',
+          `node "${scriptPath}" --source ${source} --dest ${dest} --signature ${signature}`
+        ], {
+          detached: true,
+          stdio: 'ignore'
+        });
+
+        // Track the process (note: this is the parent cmd.exe, not the spawned window)
+        terminal.unref();
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: true, message: 'Terminal launched' }));
@@ -224,7 +237,19 @@ const server = http.createServer((req, res) => {
           ['batchfile', batchDataFile],
         ]);
 
-        launchTerminal(command, 'Midnight Batch Consolidation');
+        // Launch Windows terminal with the batch consolidation script
+        const terminal = spawn('cmd.exe', [
+          '/c',
+          'start',
+          'cmd.exe',
+          '/k',
+          `node "${scriptPath}" --dest ${dest} --batchfile "${batchDataFile}"`
+        ], {
+          detached: true,
+          stdio: 'ignore'
+        });
+
+        terminal.unref();
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: true, message: 'Batch terminal launched' }));
