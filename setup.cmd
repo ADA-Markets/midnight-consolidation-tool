@@ -92,7 +92,7 @@ REM ============================================================================
 REM Start terminal launcher server in a new window
 REM ============================================================================
 echo [4/4] Starting Terminal Launcher on port 3002...
-start "Terminal Launcher" /MIN cmd /c "node scripts\terminal-launcher.cjs"
+start "Terminal Launcher" /MIN cmd /c "node \"scripts\terminal-launcher.cjs\""
 
 REM Wait for server to start
 echo Waiting for terminal launcher to start...

@@ -64,7 +64,7 @@ const server = http.createServer((req, res) => {
           'start',
           'cmd.exe',
           '/k',
-          `node ${scriptPath} --source ${source} --dest ${dest} --signature ${signature}`
+          `node "${scriptPath}" --source ${source} --dest ${dest} --signature ${signature}`
         ], {
           detached: true,
           stdio: 'ignore'
@@ -119,7 +119,7 @@ const server = http.createServer((req, res) => {
           'start',
           'cmd.exe',
           '/k',
-          `node ${scriptPath} --dest ${dest} --batchfile ${batchDataFile}`
+          `node "${scriptPath}" --dest ${dest} --batchfile "${batchDataFile}"`
         ], {
           detached: true,
           stdio: 'ignore'
