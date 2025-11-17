@@ -21,8 +21,9 @@ export function WalletImport({ onImportSuccess }: WalletImportProps) {
 
     // Validation
     const words = seedPhrase.trim().split(/\s+/);
-    if (words.length !== 24) {
-      setError('Seed phrase must be exactly 24 words');
+    const validLengths = [12, 15, 18, 21, 24];
+    if (!validLengths.includes(words.length)) {
+      setError('Seed phrase must be 12, 15, 18, 21, or 24 words');
       return;
     }
 
@@ -76,7 +77,7 @@ export function WalletImport({ onImportSuccess }: WalletImportProps) {
       <div className="text-center space-y-2">
         <h2 className="text-3xl font-bold text-white">Import Seed Phrase</h2>
         <p className="text-gray-400">
-          Enter your 24-word seed phrase to derive addresses for consolidation
+          Enter your seed phrase (12, 15, 18, 21, or 24 words) to derive addresses for consolidation
         </p>
       </div>
 
@@ -93,7 +94,7 @@ export function WalletImport({ onImportSuccess }: WalletImportProps) {
         {/* Seed Phrase Input */}
         <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-300">
-          Seed Phrase (24 words)
+          Seed Phrase (12, 15, 18, 21, or 24 words)
         </label>
         <textarea
           value={seedPhrase}
@@ -103,7 +104,7 @@ export function WalletImport({ onImportSuccess }: WalletImportProps) {
           disabled={loading}
         />
         <p className="text-xs text-gray-500">
-          {seedPhrase.trim().split(/\s+/).filter(w => w).length} / 24 words
+          {seedPhrase.trim().split(/\s+/).filter(w => w).length} words (valid: 12, 15, 18, 21, or 24)
         </p>
       </div>
 
