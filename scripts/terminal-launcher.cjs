@@ -6,12 +6,13 @@
  */
 
 const http = require('http');
-const { spawn } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
 const PORT = 3002;
 const RESULT_FILE = path.join(__dirname, 'consolidation-result.json');
+const DEFAULT_WINDOW_TITLE = 'Midnight Consolidation';
 
 // Track spawned consolidation processes
 const spawnedProcesses = new Set();
@@ -19,6 +20,122 @@ const spawnedProcesses = new Set();
 // Remove old result file on startup
 if (fs.existsSync(RESULT_FILE)) {
   fs.unlinkSync(RESULT_FILE);
+}
+
+function buildNodeCommand(scriptPath, argPairs) {
+  const args = ['node', scriptPath];
+
+  for (const [flag, value] of argPairs) {
+    if (value === undefined || value === null) continue;
+    args.push(`--${flag}`);
+    args.push(value);
+  }
+
+  return {
+    args,
+    string: args.join(' '),
+  };
+}
+
+function commandExists(binary) {
+  try {
+    const whichCmd = process.platform === 'win32' ? 'where' : 'which';
+    const res = spawnSync(whichCmd, [binary], { stdio: 'ignore' });
+    return res.status === 0;
+  } catch {
+    return false;
+  }
+}
+
+function escapeAppleScriptString(str) {
+  return str.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
+function getLinuxTerminal(commandArgs, title) {
+  const options = [
+    {
+      bin: 'x-terminal-emulator',
+      buildArgs: () => ['-T', title, '-e', ...commandArgs],
+    },
+    {
+      bin: 'gnome-terminal',
+      buildArgs: () => ['--title', title, '--', ...commandArgs],
+    },
+    {
+      bin: 'konsole',
+      buildArgs: () => ['-p', `tabtitle=${title}`, '-e', ...commandArgs],
+    },
+    {
+      bin: 'xfce4-terminal',
+      buildArgs: () => ['--title', title, '-e', ...commandArgs],
+    },
+    {
+      bin: 'alacritty',
+      buildArgs: () => ['--title', title, '-e', ...commandArgs],
+    },
+    {
+      bin: 'kitty',
+      buildArgs: () => ['--title', title, ...commandArgs],
+    },
+    {
+      bin: 'xterm',
+      buildArgs: () => ['-T', title, '-e', ...commandArgs],
+    },
+  ];
+
+  for (const option of options) {
+    if (commandExists(option.bin)) {
+      return { cmd: option.bin, args: option.buildArgs() };
+    }
+  }
+
+  return null;
+}
+
+function launchTerminal(command, title = DEFAULT_WINDOW_TITLE) {
+  if (process.platform === 'win32') {
+    const terminal = spawn('cmd.exe', [
+      '/c',
+      'start',
+      'cmd.exe',
+      '/k',
+      command.string,
+    ], {
+      detached: true,
+      stdio: 'ignore',
+    });
+
+    terminal.unref();
+    return;
+  }
+
+  if (process.platform === 'darwin') {
+    const osaScript = `
+      tell application "Terminal"
+        activate
+        do script "${escapeAppleScriptString(command.string)}"
+      end tell
+    `;
+
+    const terminal = spawn('osascript', ['-e', osaScript], {
+      detached: true,
+      stdio: 'ignore',
+    });
+    terminal.unref();
+    return;
+  }
+
+  // Linux / Unix-like
+  const linuxTerminal = getLinuxTerminal(command.args, title);
+  if (!linuxTerminal) {
+    throw new Error('Unable to find a supported terminal emulator. Install xterm/gnome-terminal or run manually:\n' + command.string);
+  }
+
+  const terminal = spawn(linuxTerminal.cmd, linuxTerminal.args, {
+    detached: true,
+    stdio: 'ignore',
+  });
+  terminal.unref();
 }
 
 const server = http.createServer((req, res) => {
@@ -55,8 +172,12 @@ const server = http.createServer((req, res) => {
           fs.unlinkSync(RESULT_FILE);
         }
 
-        // Get absolute path to the script
         const scriptPath = path.join(__dirname, 'consolidate-cli.cjs');
+        const command = buildNodeCommand(scriptPath, [
+          ['source', source],
+          ['dest', dest],
+          ['signature', signature],
+        ]);
 
         // Launch Windows terminal with the consolidation script
         const terminal = spawn('cmd.exe', [
@@ -110,8 +231,11 @@ const server = http.createServer((req, res) => {
         const batchDataFile = path.join(__dirname, 'batch-data.json');
         fs.writeFileSync(batchDataFile, JSON.stringify(addressBatch));
 
-        // Get absolute path to the script
         const scriptPath = path.join(__dirname, 'consolidate-batch-cli.cjs');
+        const command = buildNodeCommand(scriptPath, [
+          ['dest', dest],
+          ['batchfile', batchDataFile],
+        ]);
 
         // Launch Windows terminal with the batch consolidation script
         const terminal = spawn('cmd.exe', [
