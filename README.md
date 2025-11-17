@@ -9,7 +9,7 @@ A simple tool to consolidate your Midnight Scavenger Hunt rewards from multiple 
 ## 🚀 Quick Start (3 Simple Steps)
 
 1. **Download** the code from GitHub
-2. **Double-click** `setup.cmd` (first time takes a minute to install)
+2. **Double-click** `setup.cmd` on Windows **or** run `./setup.sh` on macOS/Linux (first time takes a minute to install)
 3. **Browser opens** automatically at http://localhost:3000
 
 
@@ -20,13 +20,13 @@ A simple tool to consolidate your Midnight Scavenger Hunt rewards from multiple 
 ### For Developers
 
 If you want to modify the code:
-1. Run `setup.cmd`
+1. Run `setup.cmd` on Windows (or `./setup.sh` on macOS/Linux)
 2. Browser opens at http://localhost:3000 with live reload
 3. Edit code and see changes instantly
 
 ## 📋 Scripts Available
 
-### `setup.cmd` - Main Entry Point
+### `setup.cmd` / `setup.sh` - Main Entry Point
 - Installs dependencies if needed
 - Starts terminal launcher (port 3002)
 - Starts Vite dev server (port 3000)
