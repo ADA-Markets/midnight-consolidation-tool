@@ -9,10 +9,9 @@ A simple tool to consolidate your Midnight Scavenger Hunt rewards from multiple 
 ## 🚀 Quick Start (3 Simple Steps)
 
 1. **Download** the code from GitHub
-2. **Double-click** `build-and-serve.cmd` (first time takes a minute to install)
+2. **Double-click** `setup.cmd` (first time takes a minute to install)
 3. **Browser opens** automatically at http://localhost:3000
 
-**That's it!** After the first build, use `serve-only.cmd` for instant startup.
 
 ### ⚠️ Before You Start
 
