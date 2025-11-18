@@ -1,8 +1,9 @@
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { isValidCardanoAddress, estimateConsolidationDuration } from '@/lib/utils';
+import { getLastDestinationAddress, setLastDestinationAddress } from '@/lib/storage/preferences';
 
 interface Address {
   index: number;
@@ -35,6 +36,14 @@ export function ConsolidationForm({ addresses, selectedIndices, onStartConsolida
   const sourceCount = selectedIndices.length;
   const estimatedDuration = estimateConsolidationDuration(sourceCount);
 
+  useEffect(() => {
+    const savedAddress = getLastDestinationAddress();
+    if (savedAddress) {
+      setMode('custom');
+      setCustomAddress(savedAddress);
+    }
+  }, []);
+
   const handleStart = () => {
     setError('');
 
@@ -66,6 +75,10 @@ export function ConsolidationForm({ addresses, selectedIndices, onStartConsolida
     }
 
     const label = sessionLabel.trim() || undefined;
+    if (mode === 'custom') {
+      setLastDestinationAddress(destinationAddress);
+    }
+
     onStartConsolidation(destinationAddress, mode, destinationIndex, password, label);
   };
 

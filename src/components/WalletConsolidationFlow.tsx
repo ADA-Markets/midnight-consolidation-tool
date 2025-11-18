@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { isValidCardanoAddress } from '@/lib/utils';
 import { consolidationService } from '@/services/consolidationService';
+import { getLastDestinationAddress, setLastDestinationAddress } from '@/lib/storage/preferences';
 
 interface WalletConsolidationFlowProps {
   connectedAddress: string;
@@ -24,6 +25,13 @@ export function WalletConsolidationFlow({ connectedAddress, walletApi, onBack }:
 
   const signatureMessage = `Assign accumulated Scavenger rights to: ${destinationAddress}`;
 
+  useEffect(() => {
+    const savedAddress = getLastDestinationAddress();
+    if (savedAddress) {
+      setDestinationAddress(savedAddress);
+    }
+  }, []);
+
   const handleConfigure = () => {
     setError('');
 
@@ -39,6 +47,7 @@ export function WalletConsolidationFlow({ connectedAddress, walletApi, onBack }:
       return;
     }
 
+    setLastDestinationAddress(destinationAddress);
     setStep('review');
   };
 

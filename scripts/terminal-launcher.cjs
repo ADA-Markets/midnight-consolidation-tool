@@ -92,21 +92,44 @@ function getLinuxTerminal(commandArgs, title) {
   return null;
 }
 
-function launchTerminal(command, title = DEFAULT_WINDOW_TITLE) {
-  if (process.platform === 'win32') {
-    const terminal = spawn('cmd.exe', [
-      '/c',
-      'start',
-      'cmd.exe',
-      '/k',
-      command.string,
-    ], {
-      detached: true,
-      stdio: 'ignore',
-    });
+function launchLinuxTerminal(command, title) {
+  const linuxTerminal = getLinuxTerminal(command.args, title);
+  if (!linuxTerminal) {
+    throw new Error('Unable to find a supported terminal emulator. Install xterm/gnome-terminal or run manually:\n' + command.string);
+  }
 
-    terminal.unref();
-    return;
+  const terminal = spawn(linuxTerminal.cmd, linuxTerminal.args, {
+    detached: true,
+    stdio: 'ignore',
+  });
+  terminal.unref();
+}
+
+function launchTerminal(command, title = DEFAULT_WINDOW_TITLE) {
+  if (process.platform === 'win32' && commandExists('cmd.exe')) {
+    try {
+      const terminal = spawn('cmd.exe', [
+        '/c',
+        'start',
+        'cmd.exe',
+        '/k',
+        command.string,
+      ], {
+        detached: true,
+        stdio: 'ignore',
+      });
+
+      terminal.on('error', (error) => {
+        console.error('[Terminal Launcher] Windows terminal error:', error.message);
+      });
+
+      terminal.unref();
+      return;
+    } catch (error) {
+      console.error('[Terminal Launcher] Windows spawn error:', error.message);
+      launchLinuxTerminal(command, title);
+      return;
+    }
   }
 
   if (process.platform === 'darwin') {
@@ -125,17 +148,8 @@ function launchTerminal(command, title = DEFAULT_WINDOW_TITLE) {
     return;
   }
 
-  // Linux / Unix-like
-  const linuxTerminal = getLinuxTerminal(command.args, title);
-  if (!linuxTerminal) {
-    throw new Error('Unable to find a supported terminal emulator. Install xterm/gnome-terminal or run manually:\n' + command.string);
-  }
-
-  const terminal = spawn(linuxTerminal.cmd, linuxTerminal.args, {
-    detached: true,
-    stdio: 'ignore',
-  });
-  terminal.unref();
+  // Linux / Unix-like or fallback when Windows terminal is unavailable
+  launchLinuxTerminal(command, title);
 }
 
 const server = http.createServer((req, res) => {
@@ -181,20 +195,7 @@ const server = http.createServer((req, res) => {
           ['labelBase64', labelBase64],
         ]);
 
-        // Launch Windows terminal with the consolidation script
-        const terminal = spawn('cmd.exe', [
-          '/c',
-          'start',
-          'cmd.exe',
-          '/k',
-          `node "${scriptPath}" --source ${source} --dest ${dest} --signature ${signature}`
-        ], {
-          detached: true,
-          stdio: 'ignore'
-        });
-
-        // Track the process (note: this is the parent cmd.exe, not the spawned window)
-        terminal.unref();
+        launchTerminal(command, DEFAULT_WINDOW_TITLE);
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: true, message: 'Terminal launched' }));
@@ -241,19 +242,7 @@ const server = http.createServer((req, res) => {
           ['labelBase64', labelBase64],
         ]);
 
-        // Launch Windows terminal with the batch consolidation script
-        const terminal = spawn('cmd.exe', [
-          '/c',
-          'start',
-          'cmd.exe',
-          '/k',
-          `node "${scriptPath}" --dest ${dest} --batchfile "${batchDataFile}"`
-        ], {
-          detached: true,
-          stdio: 'ignore'
-        });
-
-        terminal.unref();
+        launchTerminal(command, 'Midnight Batch Consolidation');
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: true, message: 'Batch terminal launched' }));
