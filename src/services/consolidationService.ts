@@ -62,7 +62,8 @@ export const consolidationService = {
     signature: string,
     sourceIndex?: number,
     destinationIndex?: number,
-    destinationMode?: string
+    destinationMode?: string,
+    sessionLabel?: string
   ) {
     try {
       if (!sourceAddress || !destinationAddress || !signature) {
@@ -90,6 +91,7 @@ export const consolidationService = {
         source: sourceAddress,
         dest: destinationAddress,
         signature: signature,
+        label: sessionLabel,
       }, {
         timeout: 10000, // 10 second timeout for launching terminal
       });
@@ -218,7 +220,8 @@ export const consolidationService = {
 
   async donateBatch(
     destinationAddress: string,
-    addressBatch: Array<{ sourceAddress: string; signature: string; sourceIndex: number }>
+    addressBatch: Array<{ sourceAddress: string; signature: string; sourceIndex: number }>,
+    sessionLabel?: string
   ) {
     try {
       if (!destinationAddress || !Array.isArray(addressBatch) || addressBatch.length === 0) {
@@ -234,6 +237,7 @@ export const consolidationService = {
       const launchResponse = await axios.post(`${TERMINAL_LAUNCHER_URL}/consolidate-batch`, {
         dest: destinationAddress,
         addressBatch: addressBatch,
+        label: sessionLabel,
       }, {
         timeout: 10000, // 10 second timeout for launching terminal
       });

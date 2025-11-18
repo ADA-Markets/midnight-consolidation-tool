@@ -45,6 +45,7 @@ lerna-debug.log*
 # Runtime files
 consolidation-result.json
 batch-data.json
+consolidation-log.txt
 *.log
 
 # OS files

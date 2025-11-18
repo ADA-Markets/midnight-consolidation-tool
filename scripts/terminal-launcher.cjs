@@ -157,7 +157,7 @@ const server = http.createServer((req, res) => {
     req.on('data', chunk => body += chunk);
     req.on('end', () => {
       try {
-        const { source, dest, signature } = JSON.parse(body);
+        const { source, dest, signature, label } = JSON.parse(body);
 
         if (!source || !dest || !signature) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -173,10 +173,12 @@ const server = http.createServer((req, res) => {
         }
 
         const scriptPath = path.join(__dirname, 'consolidate-cli.cjs');
+        const labelBase64 = label ? Buffer.from(label, 'utf8').toString('base64') : undefined;
         const command = buildNodeCommand(scriptPath, [
           ['source', source],
           ['dest', dest],
           ['signature', signature],
+          ['labelBase64', labelBase64],
         ]);
 
         // Launch Windows terminal with the consolidation script
@@ -212,7 +214,7 @@ const server = http.createServer((req, res) => {
     req.on('data', chunk => body += chunk);
     req.on('end', () => {
       try {
-        const { dest, addressBatch } = JSON.parse(body);
+        const { dest, addressBatch, label } = JSON.parse(body);
 
         if (!dest || !Array.isArray(addressBatch) || addressBatch.length === 0) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -232,9 +234,11 @@ const server = http.createServer((req, res) => {
         fs.writeFileSync(batchDataFile, JSON.stringify(addressBatch));
 
         const scriptPath = path.join(__dirname, 'consolidate-batch-cli.cjs');
+        const labelBase64 = label ? Buffer.from(label, 'utf8').toString('base64') : undefined;
         const command = buildNodeCommand(scriptPath, [
           ['dest', dest],
           ['batchfile', batchDataFile],
+          ['labelBase64', labelBase64],
         ]);
 
         // Launch Windows terminal with the batch consolidation script

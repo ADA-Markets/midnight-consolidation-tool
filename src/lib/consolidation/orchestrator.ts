@@ -32,6 +32,7 @@ export interface ConsolidationConfig {
   destinationMode: 'wallet' | 'custom';
   destinationIndex?: number;
   password: string;
+  sessionLabel?: string;
   onProgress: (progress: ConsolidationProgress) => void;
 }
 
@@ -68,7 +69,7 @@ export class ConsolidationOrchestrator {
    * Main consolidation workflow
    */
   async consolidate(config: ConsolidationConfig): Promise<ConsolidationResult[]> {
-    const { sourceAddresses, destinationAddress, destinationMode, destinationIndex, password, onProgress } = config;
+    const { sourceAddresses, destinationAddress, destinationMode, destinationIndex, password, sessionLabel, onProgress } = config;
 
     this.stopped = false;
     this.progress = {
@@ -157,7 +158,8 @@ export class ConsolidationOrchestrator {
 
       const batchResult = await this.consolidateBatch(
         destinationAddress,
-        addressBatch
+        addressBatch,
+        sessionLabel
       );
 
       // Process batch results
@@ -246,13 +248,14 @@ export class ConsolidationOrchestrator {
    */
   private async consolidateBatch(
     destinationAddress: string,
-    addressBatch: Array<{ sourceAddress: string; signature: string; sourceIndex: number }>
+    addressBatch: Array<{ sourceAddress: string; signature: string; sourceIndex: number }>,
+    sessionLabel?: string
   ): Promise<{ success: boolean; results?: ConsolidationResult[]; error?: string; summary?: any }> {
     try {
       // Import consolidation service dynamically to avoid circular dependencies
       const { consolidationService } = await import('../../services/consolidationService');
 
-      const result = await consolidationService.donateBatch(destinationAddress, addressBatch);
+      const result = await consolidationService.donateBatch(destinationAddress, addressBatch, sessionLabel);
 
       return result;
     } catch (error: any) {

@@ -13,7 +13,13 @@ interface Address {
 interface ConsolidationFormProps {
   addresses: Address[];
   selectedIndices: number[];
-  onStartConsolidation: (destinationAddress: string, destinationMode: 'wallet' | 'custom', destinationIndex?: number, password?: string) => void;
+  onStartConsolidation: (
+    destinationAddress: string,
+    destinationMode: 'wallet' | 'custom',
+    destinationIndex?: number,
+    password?: string,
+    sessionLabel?: string
+  ) => void;
   onBack: () => void;
 }
 
@@ -22,6 +28,7 @@ export function ConsolidationForm({ addresses, selectedIndices, onStartConsolida
   const [selectedDestIndex, setSelectedDestIndex] = useState(0);
   const [customAddress, setCustomAddress] = useState('');
   const [password, setPassword] = useState('');
+  const [sessionLabel, setSessionLabel] = useState('');
   const [confirmed, setConfirmed] = useState(false);
   const [error, setError] = useState('');
 
@@ -58,7 +65,8 @@ export function ConsolidationForm({ addresses, selectedIndices, onStartConsolida
       return;
     }
 
-    onStartConsolidation(destinationAddress, mode, destinationIndex, password);
+    const label = sessionLabel.trim() || undefined;
+    onStartConsolidation(destinationAddress, mode, destinationIndex, password, label);
   };
 
   return (
@@ -169,6 +177,22 @@ export function ConsolidationForm({ addresses, selectedIndices, onStartConsolida
         />
         <p className="text-xs text-gray-500">
           Required to sign consolidation messages
+        </p>
+      </div>
+
+      {/* Session Label */}
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-300">
+          Session Label (optional)
+        </label>
+        <Input
+          type="text"
+          value={sessionLabel}
+          onChange={(e) => setSessionLabel(e.target.value)}
+          placeholder="e.g., Pi Wallet Rewards"
+        />
+        <p className="text-xs text-gray-500">
+          Used to name the log folder that is saved to your computer for this consolidation.
         </p>
       </div>
 

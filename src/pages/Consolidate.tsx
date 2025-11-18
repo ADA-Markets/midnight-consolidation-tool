@@ -81,7 +81,8 @@ export default function ConsolidatePage() {
     destinationAddress: string,
     destinationMode: 'wallet' | 'custom',
     destinationIndex?: number,
-    password?: string
+    password?: string,
+    sessionLabel?: string
   ) => {
     if (!password) {
       alert('Password is required');
@@ -99,6 +100,7 @@ export default function ConsolidatePage() {
         destinationMode,
         destinationIndex,
         password,
+        sessionLabel,
         onProgress: (progressUpdate) => {
           setProgress(progressUpdate);
         },

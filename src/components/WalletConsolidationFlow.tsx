@@ -18,6 +18,7 @@ export function WalletConsolidationFlow({ connectedAddress, walletApi, onBack }:
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [sessionLabel, setSessionLabel] = useState('');
 
   const sourceAddress = connectedAddress;
 
@@ -87,6 +88,7 @@ export function WalletConsolidationFlow({ connectedAddress, walletApi, onBack }:
           source: sourceAddress,
           dest: destinationAddress,
           signature: sig,
+          label: sessionLabel.trim() || undefined,
         }),
       });
 
@@ -192,6 +194,22 @@ export function WalletConsolidationFlow({ connectedAddress, walletApi, onBack }:
             </div>
           </div>
 
+          {/* Session Label */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-300">
+              Session Label (optional)
+            </label>
+            <Input
+              type="text"
+              value={sessionLabel}
+              onChange={(e) => setSessionLabel(e.target.value)}
+              placeholder="e.g., Pi Wallet Rewards"
+            />
+            <p className="text-xs text-gray-500">
+              Used to name the log folder saved on your computer for this consolidation.
+            </p>
+          </div>
+
           {/* Error */}
           {error && (
             <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-3">
@@ -233,6 +251,12 @@ export function WalletConsolidationFlow({ connectedAddress, walletApi, onBack }:
             <p className="text-xs text-gray-400 mb-1">TO (Destination)</p>
             <p className="text-sm font-mono text-white break-all">{destinationAddress}</p>
           </div>
+          {sessionLabel && (
+            <div className="border-t border-gray-700 pt-4">
+              <p className="text-xs text-gray-400 mb-1">Session Label</p>
+              <p className="text-sm text-white">{sessionLabel}</p>
+            </div>
+          )}
           </div>
 
           {/* Message to Sign */}

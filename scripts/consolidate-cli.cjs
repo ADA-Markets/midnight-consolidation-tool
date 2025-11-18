@@ -11,8 +11,53 @@
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
+const { createSessionLogger, createNoopLogger } = require('./session-logger.cjs');
 
 const MIDNIGHT_API = 'https://scavenger.prod.gd.midnighttge.io';
+const RESULT_FILE = path.join(__dirname, 'consolidation-result.json');
+
+let sessionLogger = createNoopLogger();
+
+function decodeLabel(encoded) {
+  if (!encoded) return undefined;
+  try {
+    return Buffer.from(encoded, 'base64').toString('utf8');
+  } catch {
+    return undefined;
+  }
+}
+
+function logToFile(message) {
+  if (!sessionLogger || typeof sessionLogger.log !== 'function') return;
+  sessionLogger.log(message);
+}
+
+function recordEstimationSummary(details) {
+  if (!sessionLogger || typeof sessionLogger.writeSummaryLines !== 'function') return;
+  const lines = [
+    `Timestamp: ${new Date().toISOString()}`,
+    `Status: ${details.status || 'UNKNOWN'}`,
+    `Source Address: ${details.sourceAddress || 'n/a'}`,
+    `Destination Address: ${details.destinationAddress || 'n/a'}`,
+    `Solutions at Request Time: ${typeof details.solutions === 'number' ? details.solutions : 'Unavailable'}`,
+  ];
+
+  if (details.message) {
+    lines.push(`Message: ${details.message}`);
+  }
+
+  sessionLogger.writeSummaryLines(lines);
+}
+
+function updateSessionMetadata(updates) {
+  if (!sessionLogger || typeof sessionLogger.updateMetadata !== 'function') return;
+  sessionLogger.updateMetadata(updates);
+}
+
+function copyResultArtifact() {
+  if (!sessionLogger || typeof sessionLogger.copyArtifact !== 'function') return;
+  sessionLogger.copyArtifact(RESULT_FILE, 'consolidation-result.json');
+}
 
 // Parse command line arguments
 function parseArgs() {
@@ -92,8 +137,10 @@ async function consolidate(sourceAddress, destinationAddress, signature) {
 
   try {
     console.log('Making consolidation request...\n');
+    logToFile(`[REQUEST] POST ${url}`);
 
     const response = await makeRequest(url, 'POST');
+    logToFile(`[RESPONSE] Status: ${response.status} Body: ${JSON.stringify(response.data)}`);
 
     console.log(`\n← Response Status: ${response.status}`);
     console.log('← Response Body:');
@@ -116,9 +163,23 @@ async function consolidate(sourceAddress, destinationAddress, signature) {
       };
 
       fs.writeFileSync(
-        path.join(__dirname, 'consolidation-result.json'),
+        RESULT_FILE,
         JSON.stringify(result, null, 2)
       );
+
+      copyResultArtifact();
+      recordEstimationSummary({
+        status: 'SUCCESS',
+        sourceAddress,
+        destinationAddress,
+        solutions: response.data.solutions_consolidated || 0,
+        message: response.data.message || 'Rewards consolidated successfully',
+      });
+      updateSessionMetadata({
+        completedAt: new Date().toISOString(),
+        status: 'SUCCESS',
+        solutions: response.data.solutions_consolidated || 0,
+      });
 
       return 0;
     } else if (response.status === 409) {
@@ -136,9 +197,22 @@ async function consolidate(sourceAddress, destinationAddress, signature) {
       };
 
       fs.writeFileSync(
-        path.join(__dirname, 'consolidation-result.json'),
+        RESULT_FILE,
         JSON.stringify(result, null, 2)
       );
+
+      copyResultArtifact();
+      recordEstimationSummary({
+        status: 'ALREADY_CONSOLIDATED',
+        sourceAddress,
+        destinationAddress,
+        solutions: 0,
+        message: result.error,
+      });
+      updateSessionMetadata({
+        completedAt: new Date().toISOString(),
+        status: 'ALREADY_CONSOLIDATED',
+      });
 
       return 0;
     } else {
@@ -149,6 +223,7 @@ async function consolidate(sourceAddress, destinationAddress, signature) {
     console.error('✗ ERROR - Consolidation Failed');
     console.error('================================================================================\n');
     console.error('Error:', error.message);
+    logToFile(`[ERROR] ${error.message}`);
     console.error('\n');
 
     const result = {
@@ -159,9 +234,22 @@ async function consolidate(sourceAddress, destinationAddress, signature) {
     };
 
     fs.writeFileSync(
-      path.join(__dirname, 'consolidation-result.json'),
+      RESULT_FILE,
       JSON.stringify(result, null, 2)
     );
+
+    copyResultArtifact();
+    recordEstimationSummary({
+      status: 'ERROR',
+      sourceAddress,
+      destinationAddress,
+      message: error.message,
+    });
+    updateSessionMetadata({
+      completedAt: new Date().toISOString(),
+      status: 'ERROR',
+      error: error.message,
+    });
 
     return 1;
   }
@@ -175,6 +263,22 @@ async function consolidate(sourceAddress, destinationAddress, signature) {
     console.error('Usage: node consolidate-cli.js --source <addr> --dest <addr> --signature <sig>');
     process.exit(1);
   }
+
+  const sessionLabel = decodeLabel(params.labelBase64);
+
+  sessionLogger = createSessionLogger(
+    params.source || params.dest,
+    {
+      type: 'single',
+      sourceAddress: params.source,
+      destinationAddress: params.dest,
+      signaturePreview: params.signature ? `${params.signature.substring(0, 24)}...` : undefined,
+    },
+    {
+      customLabel: sessionLabel,
+    }
+  );
+  logToFile(`Session folder created for ${params.source} -> ${params.dest}`);
 
   try {
     const exitCode = await consolidate(params.source, params.dest, params.signature);
