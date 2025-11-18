@@ -55,19 +55,33 @@ const server = http.createServer((req, res) => {
           fs.unlinkSync(RESULT_FILE);
         }
 
-        // Get absolute path to the script
-        const scriptPath = path.join(__dirname, 'consolidate-cli.cjs');
+        // Create a temporary batch file to avoid quoting issues
+        const tempBat = path.join(__dirname, `consolidate-temp-${Date.now()}.bat`);
+        // Use the directory path as-is (Windows handles backslashes fine)
+        const batContent = `@echo off
+cd /d "${__dirname}"
+node "consolidate-cli.cjs" --source ${source} --dest ${dest} --signature ${signature}
+if errorlevel 1 (
+    echo.
+    echo Consolidation failed. Press any key to close...
+    pause >nul
+)
+del "%~f0"
+`;
+        fs.writeFileSync(tempBat, batContent);
 
-        // Launch Windows terminal with the consolidation script
+        // Launch Windows terminal with the batch file
+        // Use the full path without extra quotes - spawn handles arguments properly
         const terminal = spawn('cmd.exe', [
           '/c',
           'start',
           'cmd.exe',
           '/k',
-          `node "${scriptPath}" --source ${source} --dest ${dest} --signature ${signature}`
+          tempBat
         ], {
           detached: true,
-          stdio: 'ignore'
+          stdio: 'ignore',
+          cwd: __dirname
         });
 
         // Track the process (note: this is the parent cmd.exe, not the spawned window)
@@ -110,19 +124,33 @@ const server = http.createServer((req, res) => {
         const batchDataFile = path.join(__dirname, 'batch-data.json');
         fs.writeFileSync(batchDataFile, JSON.stringify(addressBatch));
 
-        // Get absolute path to the script
-        const scriptPath = path.join(__dirname, 'consolidate-batch-cli.cjs');
+        // Create a temporary batch file to avoid quoting issues
+        const tempBat = path.join(__dirname, `consolidate-batch-temp-${Date.now()}.bat`);
+        // Use the directory path as-is (Windows handles backslashes fine)
+        const batContent = `@echo off
+cd /d "${__dirname}"
+node "consolidate-batch-cli.cjs" --dest ${dest} --batchfile "batch-data.json"
+if errorlevel 1 (
+    echo.
+    echo Batch consolidation failed. Press any key to close...
+    pause >nul
+)
+del "%~f0"
+`;
+        fs.writeFileSync(tempBat, batContent);
 
-        // Launch Windows terminal with the batch consolidation script
+        // Launch Windows terminal with the batch file
+        // Use the full path without extra quotes - spawn handles arguments properly
         const terminal = spawn('cmd.exe', [
           '/c',
           'start',
           'cmd.exe',
           '/k',
-          `node "${scriptPath}" --dest ${dest} --batchfile "${batchDataFile}"`
+          tempBat
         ], {
           detached: true,
-          stdio: 'ignore'
+          stdio: 'ignore',
+          cwd: __dirname
         });
 
         terminal.unref();
@@ -217,6 +245,36 @@ server.listen(PORT, () => {
   console.log('  Press Ctrl+C to stop the server.');
   console.log('================================================================================');
   console.log('');
+});
+
+// Handle server errors
+server.on('error', (error) => {
+  if (error.code === 'EADDRINUSE') {
+    console.error('');
+    console.error('================================================================================');
+    console.error('  ERROR: Port 3002 is already in use!');
+    console.error('================================================================================');
+    console.error('');
+    console.error('  Another process is already using port 3002.');
+    console.error('  Please either:');
+    console.error('    1. Close the other process using port 3002');
+    console.error('    2. Or wait a few seconds and try again');
+    console.error('');
+    console.error('  To find what is using port 3002, run:');
+    console.error('    netstat -ano | findstr ":3002"');
+    console.error('');
+    console.error('================================================================================');
+  } else {
+    console.error('');
+    console.error('================================================================================');
+    console.error('  ERROR: Failed to start server');
+    console.error('================================================================================');
+    console.error('');
+    console.error('  Error:', error.message);
+    console.error('');
+    console.error('================================================================================');
+  }
+  process.exit(1);
 });
 
 // Graceful shutdown

@@ -92,18 +92,60 @@ REM ============================================================================
 REM Start terminal launcher server in a new window
 REM ============================================================================
 echo [4/4] Starting Terminal Launcher on port 3002...
-start "Terminal Launcher" /MIN cmd /c "node \"scripts\terminal-launcher.cjs\""
+
+REM Get the current directory (where setup.cmd is located)
+REM Remove trailing backslash if present
+set "SCRIPT_DIR=%~dp0"
+if "%SCRIPT_DIR:~-1%"=="\" set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
+cd /d "%SCRIPT_DIR%"
+
+REM Check if port 3002 is already in use and stop existing processes
+netstat -ano | findstr ":3002" >nul 2>&1
+if %errorlevel% equ 0 (
+    echo Warning: Port 3002 is already in use.
+    echo Stopping existing processes on port 3002...
+    for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":3002" ^| findstr "LISTENING"') do (
+        echo Stopping process with PID: %%a
+        taskkill /PID %%a /F >nul 2>&1
+        echo Stopped process %%a
+    )
+    echo Waiting 2 seconds for port to be released...
+    timeout /t 2 /nobreak >nul
+)
+
+REM Start terminal launcher in a visible window (not minimized) so we can see errors
+REM Change to the script directory first
+cd /d "%SCRIPT_DIR%"
+
+REM Create a simple launcher batch file to avoid quoting issues
+set "LAUNCHER_BAT=%TEMP%\midnight-launcher-%RANDOM%.bat"
+(
+    echo @echo off
+    echo cd /d "%SCRIPT_DIR%"
+    echo node scripts\terminal-launcher.cjs
+    echo if errorlevel 1 pause
+    echo del "%%~f0"
+) > "%LAUNCHER_BAT%"
+
+REM Start the launcher using the batch file
+start "Terminal Launcher Server" cmd /k "%LAUNCHER_BAT%"
 
 REM Wait for server to start
 echo Waiting for terminal launcher to start...
-timeout /t 3 /nobreak >nul
+timeout /t 5 /nobreak >nul
 
 REM Verify launcher is running
 netstat -ano | findstr ":3002" >nul 2>&1
 if %errorlevel% equ 0 (
     echo Terminal launcher started successfully on port 3002
 ) else (
-    echo Warning: Terminal launcher may not be running on port 3002
+    echo.
+    echo ERROR: Terminal launcher failed to start on port 3002
+    echo.
+    echo Please check the "Terminal Launcher Server" window for error messages.
+    echo You can also manually start it by running: npm run launcher
+    echo.
+    pause
 )
 
 echo.

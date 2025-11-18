@@ -194,7 +194,11 @@ export const consolidationService = {
     } catch (error: any) {
       console.error('[Consolidation Service] Donate error:', error);
 
-      const errorMsg = error.message || 'Failed to consolidate rewards';
+      // Check if it's a connection error
+      let errorMsg = error.message || 'Failed to consolidate rewards';
+      if (error.code === 'ECONNREFUSED' || error.message?.includes('ERR_CONNECTION_REFUSED') || error.message?.includes('connect ECONNREFUSED')) {
+        errorMsg = 'Terminal launcher server is not running. Please start it by running: npm run launcher (in a separate terminal) or use setup.cmd to start both servers.';
+      }
 
       // Log failed consolidation
       consolidationLogger.logConsolidation({
@@ -313,6 +317,15 @@ export const consolidationService = {
 
     } catch (error: any) {
       console.error('[Consolidation Service] Batch donate error:', error);
+      
+      // Check if it's a connection error
+      if (error.code === 'ECONNREFUSED' || error.message?.includes('ERR_CONNECTION_REFUSED') || error.message?.includes('connect ECONNREFUSED')) {
+        return {
+          success: false,
+          error: 'Terminal launcher server is not running. Please start it by running: npm run launcher (in a separate terminal) or use setup.cmd to start both servers.'
+        };
+      }
+      
       return {
         success: false,
         error: error.message || 'Failed to batch consolidate rewards'
