@@ -55,10 +55,12 @@ const server = http.createServer((req, res) => {
           fs.unlinkSync(RESULT_FILE);
         }
 
-        // Create a temporary batch file to avoid quoting issues
-        const tempBat = path.join(__dirname, `consolidate-temp-${Date.now()}.bat`);
-        // Use the directory path as-is (Windows handles backslashes fine)
-        const batContent = `@echo off
+        let terminal;
+
+        if (process.platform === 'win32') {
+          // Windows: Create batch file and launch cmd.exe
+          const tempBat = path.join(__dirname, `consolidate-temp-${Date.now()}.bat`);
+          const batContent = `@echo off
 cd /d "${__dirname}"
 node "consolidate-cli.cjs" --source ${source} --dest ${dest} --signature ${signature}
 if errorlevel 1 (
@@ -68,23 +70,76 @@ if errorlevel 1 (
 )
 del "%~f0"
 `;
-        fs.writeFileSync(tempBat, batContent);
+          fs.writeFileSync(tempBat, batContent);
 
-        // Launch Windows terminal with the batch file
-        // Use the full path without extra quotes - spawn handles arguments properly
-        const terminal = spawn('cmd.exe', [
-          '/c',
-          'start',
-          'cmd.exe',
-          '/k',
-          tempBat
-        ], {
-          detached: true,
-          stdio: 'ignore',
-          cwd: __dirname
-        });
+          terminal = spawn('cmd.exe', [
+            '/c',
+            'start',
+            'cmd.exe',
+            '/k',
+            tempBat
+          ], {
+            detached: true,
+            stdio: 'ignore',
+            cwd: __dirname
+          });
+        } else if (process.platform === 'darwin') {
+          // macOS: Use osascript to launch Terminal.app
+          const script = `cd "${__dirname}" && node "consolidate-cli.cjs" --source ${source} --dest ${dest} --signature ${signature}`;
+          terminal = spawn('osascript', [
+            '-e',
+            `tell application "Terminal" to do script "${script.replace(/"/g, '\\"')}"`
+          ], {
+            detached: true,
+            stdio: 'ignore',
+            cwd: __dirname
+          });
+        } else {
+          // Linux: Try common terminal emulators
+          const tempSh = path.join(__dirname, `consolidate-temp-${Date.now()}.sh`);
+          const shContent = `#!/bin/bash
+cd "${__dirname}"
+node "consolidate-cli.cjs" --source ${source} --dest ${dest} --signature ${signature}
+EXIT_CODE=$?
+if [ $EXIT_CODE -ne 0 ]; then
+    echo ""
+    echo "Consolidation failed. Press any key to close..."
+    read -n 1
+fi
+rm -f "$0"
+`;
+          fs.writeFileSync(tempSh, shContent);
+          fs.chmodSync(tempSh, 0o755);
 
-        // Track the process (note: this is the parent cmd.exe, not the spawned window)
+          // Try to find an available terminal emulator
+          const terminals = [
+            { cmd: 'x-terminal-emulator', args: ['-e', tempSh] },
+            { cmd: 'gnome-terminal', args: ['--', tempSh] },
+            { cmd: 'konsole', args: ['-e', tempSh] },
+            { cmd: 'xfce4-terminal', args: ['-e', tempSh] },
+            { cmd: 'xterm', args: ['-e', tempSh] }
+          ];
+
+          let launched = false;
+          for (const term of terminals) {
+            try {
+              terminal = spawn(term.cmd, term.args, {
+                detached: true,
+                stdio: 'ignore',
+                cwd: __dirname
+              });
+              launched = true;
+              break;
+            } catch (err) {
+              continue;
+            }
+          }
+
+          if (!launched) {
+            throw new Error('No terminal emulator found. Please install gnome-terminal, konsole, xfce4-terminal, or xterm.');
+          }
+        }
+
         terminal.unref();
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -124,10 +179,12 @@ del "%~f0"
         const batchDataFile = path.join(__dirname, 'batch-data.json');
         fs.writeFileSync(batchDataFile, JSON.stringify(addressBatch));
 
-        // Create a temporary batch file to avoid quoting issues
-        const tempBat = path.join(__dirname, `consolidate-batch-temp-${Date.now()}.bat`);
-        // Use the directory path as-is (Windows handles backslashes fine)
-        const batContent = `@echo off
+        let terminal;
+
+        if (process.platform === 'win32') {
+          // Windows: Create batch file and launch cmd.exe
+          const tempBat = path.join(__dirname, `consolidate-batch-temp-${Date.now()}.bat`);
+          const batContent = `@echo off
 cd /d "${__dirname}"
 node "consolidate-batch-cli.cjs" --dest ${dest} --batchfile "batch-data.json"
 if errorlevel 1 (
@@ -137,21 +194,75 @@ if errorlevel 1 (
 )
 del "%~f0"
 `;
-        fs.writeFileSync(tempBat, batContent);
+          fs.writeFileSync(tempBat, batContent);
 
-        // Launch Windows terminal with the batch file
-        // Use the full path without extra quotes - spawn handles arguments properly
-        const terminal = spawn('cmd.exe', [
-          '/c',
-          'start',
-          'cmd.exe',
-          '/k',
-          tempBat
-        ], {
-          detached: true,
-          stdio: 'ignore',
-          cwd: __dirname
-        });
+          terminal = spawn('cmd.exe', [
+            '/c',
+            'start',
+            'cmd.exe',
+            '/k',
+            tempBat
+          ], {
+            detached: true,
+            stdio: 'ignore',
+            cwd: __dirname
+          });
+        } else if (process.platform === 'darwin') {
+          // macOS: Use osascript to launch Terminal.app
+          const script = `cd "${__dirname}" && node "consolidate-batch-cli.cjs" --dest ${dest} --batchfile "batch-data.json"`;
+          terminal = spawn('osascript', [
+            '-e',
+            `tell application "Terminal" to do script "${script.replace(/"/g, '\\"')}"`
+          ], {
+            detached: true,
+            stdio: 'ignore',
+            cwd: __dirname
+          });
+        } else {
+          // Linux: Try common terminal emulators
+          const tempSh = path.join(__dirname, `consolidate-batch-temp-${Date.now()}.sh`);
+          const shContent = `#!/bin/bash
+cd "${__dirname}"
+node "consolidate-batch-cli.cjs" --dest ${dest} --batchfile "batch-data.json"
+EXIT_CODE=$?
+if [ $EXIT_CODE -ne 0 ]; then
+    echo ""
+    echo "Batch consolidation failed. Press any key to close..."
+    read -n 1
+fi
+rm -f "$0"
+`;
+          fs.writeFileSync(tempSh, shContent);
+          fs.chmodSync(tempSh, 0o755);
+
+          // Try to find an available terminal emulator
+          const terminals = [
+            { cmd: 'x-terminal-emulator', args: ['-e', tempSh] },
+            { cmd: 'gnome-terminal', args: ['--', tempSh] },
+            { cmd: 'konsole', args: ['-e', tempSh] },
+            { cmd: 'xfce4-terminal', args: ['-e', tempSh] },
+            { cmd: 'xterm', args: ['-e', tempSh] }
+          ];
+
+          let launched = false;
+          for (const term of terminals) {
+            try {
+              terminal = spawn(term.cmd, term.args, {
+                detached: true,
+                stdio: 'ignore',
+                cwd: __dirname
+              });
+              launched = true;
+              break;
+            } catch (err) {
+              continue;
+            }
+          }
+
+          if (!launched) {
+            throw new Error('No terminal emulator found. Please install gnome-terminal, konsole, xfce4-terminal, or xterm.');
+          }
+        }
 
         terminal.unref();
 
@@ -204,9 +315,8 @@ del "%~f0"
       server.close(() => {
         console.log('[Terminal Launcher] Server stopped');
 
-        // On Windows, kill any node.js consolidation processes and close CMD windows
         if (process.platform === 'win32') {
-          // Kill all node processes running consolidate scripts
+          // On Windows, kill any node.js consolidation processes and close CMD windows
           spawn('taskkill', ['/F', '/FI', 'WINDOWTITLE eq Midnight*'], {
             detached: true,
             stdio: 'ignore'
@@ -220,6 +330,7 @@ del "%~f0"
             }).unref();
           }, 300);
         } else {
+          // On Linux/macOS, just exit normally
           process.exit(0);
         }
       });
