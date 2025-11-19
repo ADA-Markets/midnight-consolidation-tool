@@ -55,9 +55,9 @@ export class LucidWalletManager {
   async importWallet(seedPhrase: string, password: string, count: number = 20): Promise<WalletInfo> {
     // Validate mnemonic
     const words = seedPhrase.trim().split(/\s+/);
-    if (words.length !== 24) {
-      throw new Error('Seed phrase must be exactly 24 words');
-    }
+    // if (words.length !== 24) {
+    //   throw new Error('Seed phrase must be exactly 24 words');
+    // }
 
     this.mnemonic = seedPhrase.trim();
 
