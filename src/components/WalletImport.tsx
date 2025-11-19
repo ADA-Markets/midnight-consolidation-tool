@@ -21,10 +21,10 @@ export function WalletImport({ onImportSuccess }: WalletImportProps) {
 
     // Validation
     const words = seedPhrase.trim().split(/\s+/);
-    if (words.length !== 24) {
-      setError('Seed phrase must be exactly 24 words');
-      return;
-    }
+    // if (words.length !== 24) {
+    //   setError('Seed phrase must be exactly 24 words');
+    //   return;
+    // }
 
     if (password.length < 8) {
       setError('Password must be at least 8 characters');
