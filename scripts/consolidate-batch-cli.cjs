@@ -12,7 +12,22 @@ const https = require('https');
 const fs = require('fs');
 const path = require('path');
 
-const MIDNIGHT_API = 'https://scavenger.prod.gd.midnighttge.io';
+// API Configuration - change this to switch between providers
+const API_PROVIDER = 'defensio'; // 'midnight' or 'defensio'
+
+const API_CONFIGS = {
+  midnight: {
+    baseUrl: 'https://scavenger.prod.gd.midnighttge.io',
+    displayName: 'Midnight Scavenger Hunt',
+  },
+  defensio: {
+    baseUrl: 'https://mine.defensio.io/api',
+    displayName: 'Defensio DFO Mining',
+  },
+};
+
+const API_CONFIG = API_CONFIGS[API_PROVIDER];
+const API_BASE_URL = API_CONFIG.baseUrl;
 
 // Make HTTPS request
 function makeRequest(url, method = 'POST') {
@@ -63,11 +78,11 @@ function makeRequest(url, method = 'POST') {
 // Main batch consolidation function
 async function consolidateBatch(destinationAddress, addressBatch) {
   console.log('\n================================================================================');
-  console.log('        Midnight Batch Reward Consolidation - Terminal View');
+  console.log(`        ${API_CONFIG.displayName} - Batch Consolidation`);
   console.log('================================================================================\n');
   console.log('Destination Address: ' + destinationAddress);
   console.log('Total Addresses:     ' + addressBatch.length);
-  console.log('\nThis terminal shows EXACTLY what is sent to the Midnight API.');
+  console.log(`\nThis terminal shows EXACTLY what is sent to the ${API_CONFIG.displayName} API.`);
   console.log('All network calls are visible below.\n');
   console.log('================================================================================\n');
 
@@ -84,7 +99,7 @@ async function consolidateBatch(destinationAddress, addressBatch) {
     console.log(`\n[${i + 1}/${addressBatch.length}] Processing address index ${sourceIndex}:`);
     console.log(`    ${sourceAddress.substring(0, 40)}...`);
 
-    const url = `${MIDNIGHT_API}/donate_to/${destinationAddress}/${sourceAddress}/${signature}`;
+    const url = `${API_BASE_URL}/donate_to/${destinationAddress}/${sourceAddress}/${signature}`;
 
     try {
       const response = await makeRequest(url, 'POST');

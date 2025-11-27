@@ -3,6 +3,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { isValidCardanoAddress } from '@/lib/utils';
 import { consolidationService } from '@/services/consolidationService';
+import { API_DISPLAY_NAME } from '@/config/api-config';
 
 interface WalletConsolidationFlowProps {
   connectedAddress: string;
@@ -187,7 +188,7 @@ export function WalletConsolidationFlow({ connectedAddress, walletApi, onBack }:
             {/* Warning about registration */}
             <div className="bg-yellow-500/10 border border-yellow-500/50 rounded-lg p-3 mt-3">
               <p className="text-xs text-yellow-400">
-                <strong>⚠️ Important:</strong> Make sure your destination address is registered with the Midnight Scavenger Hunt before consolidating.
+                <strong>⚠️ Important:</strong> Make sure your destination address is registered with {API_DISPLAY_NAME} before consolidating.
               </p>
             </div>
           </div>
@@ -279,7 +280,7 @@ export function WalletConsolidationFlow({ connectedAddress, walletApi, onBack }:
         <div className="space-y-2">
           <div className="text-4xl">⏳</div>
           <h2 className="text-2xl font-bold text-white">Processing...</h2>
-          <p className="text-gray-400">Sending consolidation request to Midnight API</p>
+          <p className="text-gray-400">Sending consolidation request to {API_DISPLAY_NAME} API</p>
         </div>
       </div>
     );

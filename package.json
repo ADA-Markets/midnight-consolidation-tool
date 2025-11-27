@@ -1,6 +1,6 @@
 {
-  "name": "midnight-consolidation-tool",
-  "version": "1.0.0",
+  "name": "defensio-consolidation-tool",
+  "version": "1.0.0-defensio",
   "private": true,
   "type": "module",
   "scripts": {

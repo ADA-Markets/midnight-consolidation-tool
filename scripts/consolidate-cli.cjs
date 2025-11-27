@@ -12,7 +12,22 @@ const https = require('https');
 const fs = require('fs');
 const path = require('path');
 
-const MIDNIGHT_API = 'https://scavenger.prod.gd.midnighttge.io';
+// API Configuration - change this to switch between providers
+const API_PROVIDER = 'defensio'; // 'midnight' or 'defensio'
+
+const API_CONFIGS = {
+  midnight: {
+    baseUrl: 'https://scavenger.prod.gd.midnighttge.io',
+    displayName: 'Midnight Scavenger Hunt',
+  },
+  defensio: {
+    baseUrl: 'https://mine.defensio.io/api',
+    displayName: 'Defensio DFO Mining',
+  },
+};
+
+const API_CONFIG = API_CONFIGS[API_PROVIDER];
+const API_BASE_URL = API_CONFIG.baseUrl;
 
 // Parse command line arguments
 function parseArgs() {
@@ -79,16 +94,16 @@ function makeRequest(url, method = 'POST') {
 // Main consolidation function
 async function consolidate(sourceAddress, destinationAddress, signature) {
   console.log('\n================================================================================');
-  console.log('           Midnight Reward Consolidation - Terminal View');
+  console.log(`           ${API_CONFIG.displayName} - Reward Consolidation`);
   console.log('================================================================================\n');
   console.log('Source Address:      ' + sourceAddress);
   console.log('Destination Address: ' + destinationAddress);
   console.log('Signature:           ' + signature.substring(0, 64) + '...');
-  console.log('\nThis terminal shows EXACTLY what is sent to the Midnight API.');
+  console.log(`\nThis terminal shows EXACTLY what is sent to the ${API_CONFIG.displayName} API.`);
   console.log('All network calls are visible below.\n');
   console.log('================================================================================\n');
 
-  const url = `${MIDNIGHT_API}/donate_to/${destinationAddress}/${sourceAddress}/${signature}`;
+  const url = `${API_BASE_URL}/donate_to/${destinationAddress}/${sourceAddress}/${signature}`;
 
   try {
     console.log('Making consolidation request...\n');
